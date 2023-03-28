@@ -1,19 +1,17 @@
-FROM golang
+FROM alpine:latest
 
-RUN mkdir -p $GOPATH/src/github.com/hpcloud/tail/
-ADD . $GOPATH/src/github.com/hpcloud/tail/
+LABEL maintainer="wtlyybb@163.com"
 
-# expecting to fetch dependencies successfully.
-RUN go get -v github.com/hpcloud/tail
+RUN set -ex \
+    && echo "http://nl.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories \
+    && echo "http://nl.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories \
+    && echo "http://nl.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories \
+    && sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories \
+    && sed -i 's/nl.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories \
+    && apk update \
+    && apk upgrade \
+    && apk --virtual add --no-cache multitail
 
-# expecting to run the test successfully.
-RUN go test -v github.com/hpcloud/tail
+ADD run.sh /root/
 
-# expecting to install successfully
-RUN go install -v github.com/hpcloud/tail
-RUN go install -v github.com/hpcloud/tail/cmd/gotail
-
-RUN $GOPATH/bin/gotail -h || true
-
-ENV PATH $GOPATH/bin:$PATH
-CMD ["gotail"]
+CMD ["sh","/root/run.sh"]
