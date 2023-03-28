@@ -33,15 +33,15 @@ GOPATH ?= $(shell go env GOPATH)
 BIN_DIR := $(GOPATH)/bin
 GOLANGCI_LINT := $(BIN_DIR)/golangci-lint
 
-.PHONY: lint test build build-local container push clean
+.PHONY: lint test build-remote build run container push clean
 
-build:
+build-remote:
 	@docker run --rm -t													\
 	  -v "${PWD}:/go/src/github.com/caicloud/event_exporter"			\
 	  -w /go/src/github.com/caicloud/event_exporter						\
 	  golang:${GO_VERSION} make build-local
 
-build-local: clean
+build: clean
 	@echo ">> building binaries"
 	@GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) CGO_ENABLED=0	\
 	go build -mod=vendor -ldflags "-s -w								\
@@ -50,6 +50,11 @@ build-local: clean
 	  -X $(ROOT)/pkg/version.Commit=${COMMIT}							\
 	  -X $(ROOT)/pkg/version.BuildDate=${BUILD_DATE}"					\
 	-o event_exporter
+
+run: 
+	@echo ">> run event_exporter"
+	#go run -mod vendor main.go store.go exporter.go backoff.go --event.warning true --kubeconfig ~/.kube/config
+	go run -mod vendor main.go store.go exporter.go backoff.go --kubeconfig ~/.kube/config
 
 container: build
 	@echo ">> building image"

@@ -34,15 +34,17 @@ type EventStore struct {
 	eventController cache.Controller
 	eventStore      cache.Store
 	backoff         *Backoff
+	onlyWarning     bool
 	events          *prometheus.Desc
 }
 
 // NewEventStore returns EventStore or error
-func NewEventStore(client kubernetes.Interface, init, max time.Duration, namespace string) *EventStore {
+func NewEventStore(client kubernetes.Interface, init, max time.Duration, onlyWarning bool, namespace string) *EventStore {
 	es := &EventStore{
-		client:  client,
-		stopCh:  make(chan struct{}),
-		backoff: NewBackoff(init, max),
+		client:      client,
+		stopCh:      make(chan struct{}),
+		backoff:     NewBackoff(init, max),
+		onlyWarning: onlyWarning,
 		events: prometheus.NewDesc(
 			"kubernetes_events",
 			"State of kubernetes events",
@@ -144,6 +146,9 @@ func (es *EventStore) Scrap(ch chan<- prometheus.Metric) {
 			continue
 		}
 		event := obj.(*core_v1.Event)
+		if es.onlyWarning && event.Type == "Normal" {
+			continue
+		}
 		ch <- prometheus.MustNewConstMetric(
 			es.events, prometheus.GaugeValue,
 			eval(isHappening),

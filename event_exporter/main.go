@@ -37,6 +37,10 @@ var (
 		"event.init-length", 20,
 		"Lower bound duration(sec) of an event to preserve",
 	)
+	onlyWarning = pflag.Bool(
+		"event.warning", false,
+		"Only generate warning event metric (type: Normal, Warning)",
+	)
 	kubeNamespace = pflag.String(
 		"namespace", core_v1.NamespaceAll,
 		"Optional, the namespace to watch (default all)",
@@ -80,6 +84,7 @@ func main() {
 	store := NewEventStore(client,
 		time.Duration(*initPreserve)*time.Second,
 		time.Duration(*maxPreserve)*time.Second,
+		*onlyWarning,
 		*kubeNamespace)
 	go store.Run()
 	exporter := NewExporter(store)
